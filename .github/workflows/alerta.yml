@@ -1,0 +1,38 @@
+name: alerta-cripto
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: "Só enviar mensagem de teste"
+        type: boolean
+        default: false
+concurrency:
+  group: alerta-cripto
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  rodar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      INTERVALO: "15m"
+      MAX_TOKENS: "40"
+      MIN_CONF: "media"
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pandas numpy scikit-learn requests matplotlib
+      - uses: actions/cache@v4
+        with:
+          path: estado
+          key: estado-${{ github.run_id }}
+          restore-keys: estado-
+      - run: python alerta.py ${{ github.event.inputs.teste == 'true' && '--teste' || '' }}
